@@ -190,9 +190,10 @@ function resolveSettings(config) {
 
 function resolvePublicThemePreset(settings) {
     const preset = normalizeString(settings?.vpsMonitor?.publicThemePreset).toLowerCase();
-    const supported = new Set(['default', 'komari', 'minimal', 'tech', 'glass']);
+    const supported = new Set(['default', 'fresh', 'minimal', 'tech', 'glass']);
     // 兼容旧的 tech-dark 主题
-    return supported.has(preset) ? preset : (preset === 'tech-dark' ? 'tech' : 'default');
+    if (!supported.has(preset)) return preset === 'tech-dark' ? 'tech' : 'default';
+    return preset;
 }
 
 function buildPublicThemeConfig(settings) {
@@ -214,8 +215,6 @@ function buildPublicThemeConfig(settings) {
         showAnomalies: raw.publicThemeShowAnomalies !== false,
         showFeatured: raw.publicThemeShowFeatured !== false,
         showDetailTable: raw.publicThemeShowDetailTable !== false,
-        showHeader: raw.publicThemeShowHeader !== false,
-        showFooter: raw.publicThemeShowFooter !== false,
         footerText: normalizeString(raw.publicThemeFooterText) || DEFAULT_SETTINGS.vpsMonitor.publicThemeFooterText,
         sectionOrder,
         customCss: normalizeString(raw.publicThemeCustomCss)
@@ -1497,7 +1496,15 @@ export async function handleVpsPublicSnapshotRequest(request, env) {
         return summary;
     });
 
-    return createJsonResponse({ success: true, data, theme: buildPublicThemeConfig(settings) });
+    return createJsonResponse({
+        success: true,
+        data,
+        theme: buildPublicThemeConfig(settings),
+        layout: {
+            headerEnabled: settings?.vpsMonitor?.publicPageShowHeader !== false,
+            footerEnabled: settings?.vpsMonitor?.publicPageShowFooter !== false
+        }
+    });
 }
 
 async function fetchLatestNetworkSamplesBatch(db, nodeIds) {
@@ -1577,7 +1584,11 @@ export async function handleVpsPublicNodeDetailRequest(request, env) {
     return createJsonResponse({
         success: true,
         data: summary,
-        networkSamples: samples
+        networkSamples: samples,
+        layout: {
+            headerEnabled: settings?.vpsMonitor?.publicPageShowHeader !== false,
+            footerEnabled: settings?.vpsMonitor?.publicPageShowFooter !== false
+        }
     });
 }
 
